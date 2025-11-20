@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>睡眠质量分析工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        :root {
+            --primary: #4a6cf7;
+            --primary-light: #6a8aff;
+            --primary-dark: #3a5ae0;
+            --secondary: #8e44ad;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-light: #f7fafc;
+            --white: #ffffff;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 12px;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .device-info {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            max-width: 150px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-top: 10px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f1f5ff;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 25px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+        
+        .tab.active {
+            background: var(--white);
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(74, 108, 247, 0.15);
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 14px;
+        }
+        
+        .time-input-container {
+            position: relative;
+        }
+        
+        input[type="time"] {
+            width: 100%;
+            padding: 14px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: var(--white);
+            color: var(--text-dark);
+        }
+        
+        input[type="time"]:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+        }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(74, 108, 247, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #7d3c98;
+        }
+        
+        .recommendation-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .recommendation-buttons .btn {
+            flex: 1;
+            margin-top: 0;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8faff;
+            display: none;
+            animation: slideUp 0.5s ease;
+            border: 1px solid #e8edff;
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: var(--text-dark);
+        }
+        
+        .sleep-quality {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .quality-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .excellent {
+            background: #10b981;
+            color: white;
+        }
+        
+        .good {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .fair {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .poor {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .sleep-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        
+        .info-box {
+            flex: 1;
+            text-align: center;
+            padding: 15px 10px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .info-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+        
+        .recommendations {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fc;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .recommendations h3 {
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .recommendations ul {
+            padding-left: 20px;
+        }
+        
+        .recommendations li {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+        
+        .recommendation-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .recommendation-result h4 {
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        
+        .recommendation-result p {
+            font-size: 14px;
+            color: var(--text-dark);
+            margin-bottom: 5px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 22px;
+            }
+            
+            .device-info {
+                font-size: 11px;
+                padding: 5px 10px;
+                max-width: 130px;
+            }
+            
+            .sleep-info {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .info-box {
+                margin: 0;
+            }
+            
+            .result {
+                padding: 15px;
+            }
+            
+            .recommendation-buttons {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 350px) {
+            .container {
+                padding: 15px 10px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                margin-bottom: 5px;
+            }
+        }
+        
+        /* 防止内容被遮挡的额外样式 */
+        .safe-area {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+    </style>
+</head>
+<body>
+    <div class="container safe-area">
+        <div class="device-info" id="deviceInfo">设备检测中...</div>
+        
+        <header>
+            <h1>睡眠质量分析工具</h1>
+            <p class="subtitle">优化您的睡眠，提升生活质量</p>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="calculator">睡眠时间计算</div>
+            <div class="tab" data-tab="analyzer">睡眠质量分析</div>
+        </div>
+        
+        <!-- 睡眠时间计算器 -->
+        <div class="tab-content active" id="calculator">
+            <div class="form-group">
+                <label for="wakeupTime">期望起床时间</label>
+                <div class="time-input-container">
+                    <input type="time" id="wakeupTime" value="08:00">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="sleepTime">期望入睡时间</label>
+                <div class="time-input-container">
+                    <input type="time" id="sleepTime" value="23:00">
+                </div>
+            </div>
+            
+            <div class="recommendation-buttons">
+                <button class="btn" id="calculateBtn">计算睡眠时间</button>
+                <button class="btn btn-secondary" id="recommendWakeupBtn">推荐起床时间</button>
+                <button class="btn btn-secondary" id="recommendSleepBtn">推荐入睡时间</button>
+            </div>
+            
+            <div class="result" id="calculatorResult">
+                <h2>睡眠时间分析</h2>
+                <div class="sleep-info">
+                    <div class="info-box">
+                        <div class="info-value" id="sleepDuration">9.0小时</div>
+                        <div class="info-label">总睡眠时间</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-value" id="sleepCycles">6个</div>
+                        <div class="info-label">睡眠周期</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-value" id="idealWakeup">08:00</div>
+                        <div class="info-label">理想起床时间</div>
+                    </div>
+                </div>
+                
+                <div class="recommendation-result" id="wakeupRecommendation" style="display: none;">
+                    <h4>基于入睡时间的起床推荐</h4>
+                    <p id="wakeupRecText"></p>
+                </div>
+                
+                <div class="recommendation-result" id="sleepRecommendation" style="display: none;">
+                    <h4>基于起床时间的入睡推荐</h4>
+                    <p id="sleepRecText"></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 睡眠质量分析器 -->
+        <div class="tab-content" id="analyzer">
+            <div class="form-group">
+                <label for="actualSleepTime">实际入睡时间</label>
+                <div class="time-input-container">
+                    <input type="time" id="actualSleepTime" value="23:30">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="actualWakeupTime">实际起床时间</label>
+                <div class="time-input-container">
+                    <input type="time" id="actualWakeupTime" value="07:15">
+                </div>
+            </div>
+            
+            <button class="btn" id="analyzeBtn">分析睡眠质量</button>
+            
+            <div class="result" id="analyzerResult">
+                <h2>睡眠质量报告</h2>
+                <div class="sleep-quality">
+                    <h3>睡眠质量评分</h3>
+                    <div class="quality-badge excellent" id="qualityBadge">优秀</div>
+                </div>
+                
+                <div class="sleep-info">
+                    <div class="info-box">
+                        <div class="info-value" id="actualDuration">7.8小时</div>
+                        <div class="info-label">实际睡眠时间</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-value" id="sleepEfficiency">98%</div>
+                        <div class="info-label">睡眠效率</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-value" id="deepSleep">1.9小时</div>
+                        <div class="info-label">深睡时间(估算)</div>
+                    </div>
+                </div>
+                
+                <div class="recommendations">
+                    <h3>改善建议</h3>
+                    <ul id="recommendationsList">
+                        <li>保持规律的睡眠时间表</li>
+                        <li>睡前避免使用电子设备</li>
+                        <li>确保睡眠环境舒适黑暗</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检测设备信息
+        function detectDevice() {
+            const userAgent = navigator.userAgent;
+            let deviceInfo = "未知设备";
+            let deviceType = "电脑";
+            
+            // 检测移动设备
+            if (/Android/i.test(userAgent)) {
+                deviceType = "Android设备";
+                // 尝试提取具体型号
+                const match = userAgent.match(/Android.*;\s([^;]+)\sBuild/);
+                if (match) {
+                    deviceInfo = match[1];
+                } else {
+                    deviceInfo = "Android设备";
+                }
+            } else if (/iPhone|iPad|iPod/i.test(userAgent)) {
+                deviceType = "iOS设备";
+                // 尝试提取具体型号
+                if (/iPhone/i.test(userAgent)) {
+                    const match = userAgent.match(/iPhone\s([^;]+)/);
+                    if (match) {
+                        deviceInfo = "iPhone " + match[1];
+                    } else {
+                        deviceInfo = "iPhone";
+                    }
+                } else if (/iPad/i.test(userAgent)) {
+                    deviceInfo = "iPad";
+                }
+            } else if (/Windows/i.test(userAgent)) {
+                deviceInfo = "Windows电脑";
+            } else if (/Macintosh/i.test(userAgent)) {
+                deviceInfo = "Mac电脑";
+            } else if (/Linux/i.test(userAgent)) {
+                deviceInfo = "Linux电脑";
+            }
+            
+            // 检测屏幕尺寸
+            const screenSize = window.innerWidth + "x" + window.innerHeight;
+            
+            // 显示设备信息
+            document.getElementById('deviceInfo').textContent = deviceInfo + " (" + screenSize + ")";
+            
+            // 根据设备类型调整布局
+            if (/Android|iPhone|iPad|iPod/i.test(userAgent)) {
+                document.body.classList.add('mobile-device');
+            }
+        }
+        
+        // 标签切换功能
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // 移除所有活动标签
+                document.querySelectorAll('.tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                
+                // 隐藏所有内容
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // 激活当前标签
+                this.classList.add('active');
+                
+                // 显示对应内容
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+                
+                // 隐藏之前的结果
+                document.getElementById('calculatorResult').style.display = 'none';
+                document.getElementById('analyzerResult').style.display = 'none';
+            });
+        });
+        
+        // 睡眠时间计算功能
+        document.getElementById('calculateBtn').addEventListener('click', function() {
+            const wakeupTime = document.getElementById('wakeupTime').value;
+            const sleepTime = document.getElementById('sleepTime').value;
+            
+            // 将时间字符串转换为日期对象（使用同一天）
+            const [wakeupHours, wakeupMinutes] = wakeupTime.split(':').map(Number);
+            const [sleepHours, sleepMinutes] = sleepTime.split(':').map(Number);
+            
+            // 创建日期对象
+            const wakeupDate = new Date();
+            wakeupDate.setHours(wakeupHours, wakeupMinutes, 0, 0);
+            
+            let sleepDate = new Date();
+            sleepDate.setHours(sleepHours, sleepMinutes, 0, 0);
+            
+            // 如果睡觉时间在起床时间之后，则睡觉时间应该是前一天
+            if (sleepDate > wakeupDate) {
+                sleepDate.setDate(sleepDate.getDate() - 1);
+            }
+            
+            // 计算睡眠时长（毫秒）
+            const sleepDurationMs = wakeupDate - sleepDate;
+            const sleepDurationHours = sleepDurationMs / (1000 * 60 * 60);
+            
+            // 计算睡眠周期（每个周期约90分钟）
+            const sleepCycles = Math.round(sleepDurationHours * 60 / 90);
+            
+            // 计算理想起床时间（基于90分钟周期）
+            const idealWakeupDate = new Date(sleepDate.getTime() + (sleepCycles * 90 * 60 * 1000));
+            const idealWakeupTime = idealWakeupDate.getHours().toString().padStart(2, '0') + ':' + 
+                                   idealWakeupDate.getMinutes().toString().padStart(2, '0');
+            
+            // 显示结果
+            document.getElementById('sleepDuration').textContent = sleepDurationHours.toFixed(1) + '小时';
+            document.getElementById('sleepCycles').textContent = sleepCycles + '个';
+            document.getElementById('idealWakeup').textContent = idealWakeupTime;
+            document.getElementById('calculatorResult').style.display = 'block';
+            
+            // 隐藏推荐结果
+            document.getElementById('wakeupRecommendation').style.display = 'none';
+            document.getElementById('sleepRecommendation').style.display = 'none';
+        });
+        
+        // 根据入睡时间推荐起床时间
+        document.getElementById('recommendWakeupBtn').addEventListener('click', function() {
+            const sleepTime = document.getElementById('sleepTime').value;
+            
+            if (!sleepTime) {
+                alert('请先输入入睡时间');
+                return;
+            }
+            
+            const [sleepHours, sleepMinutes] = sleepTime.split(':').map(Number);
+            
+            // 创建日期对象
+            const sleepDate = new Date();
+            sleepDate.setHours(sleepHours, sleepMinutes, 0, 0);
+            
+            // 计算推荐的起床时间（基于完整的睡眠周期）
+            const cycle90 = new Date(sleepDate.getTime() + (90 * 60 * 1000 * 5)); // 5个周期 = 7.5小时
+            const cycle120 = new Date(sleepDate.getTime() + (90 * 60 * 1000 * 6)); // 6个周期 = 9小时
+            
+            const cycle90Time = cycle90.getHours().toString().padStart(2, '0') + ':' + 
+                              cycle90.getMinutes().toString().padStart(2, '0');
+            const cycle120Time = cycle120.getHours().toString().padStart(2, '0') + ':' + 
+                               cycle120.getMinutes().toString().padStart(2, '0');
+            
+            // 显示推荐结果
+            document.getElementById('wakeupRecText').textContent = 
+                `如果您在 ${sleepTime} 入睡，推荐的起床时间为：${cycle90Time} (7.5小时/5个周期) 或 ${cycle120Time} (9小时/6个周期)`;
+            
+            document.getElementById('wakeupRecommendation').style.display = 'block';
+            document.getElementById('sleepRecommendation').style.display = 'none';
+            document.getElementById('calculatorResult').style.display = 'block';
+        });
+        
+        // 根据起床时间推荐入睡时间
+        document.getElementById('recommendSleepBtn').addEventListener('click', function() {
+            const wakeupTime = document.getElementById('wakeupTime').value;
+            
+            if (!wakeupTime) {
+                alert('请先输入起床时间');
+                return;
+            }
+            
+            const [wakeupHours, wakeupMinutes] = wakeupTime.split(':').map(Number);
+            
+            // 创建日期对象
+            const wakeupDate = new Date();
+            wakeupDate.setHours(wakeupHours, wakeupMinutes, 0, 0);
+            
+            // 计算推荐的入睡时间（基于完整的睡眠周期）
+            const cycle90 = new Date(wakeupDate.getTime() - (90 * 60 * 1000 * 5)); // 5个周期 = 7.5小时
+            const cycle120 = new Date(wakeupDate.getTime() - (90 * 60 * 1000 * 6)); // 6个周期 = 9小时
+            
+            const cycle90Time = cycle90.getHours().toString().padStart(2, '0') + ':' + 
+                              cycle90.getMinutes().toString().padStart(2, '0');
+            const cycle120Time = cycle120.getHours().toString().padStart(2, '0') + ':' + 
+                               cycle120.getMinutes().toString().padStart(2, '0');
+            
+            // 显示推荐结果
+            document.getElementById('sleepRecText').textContent = 
+                `如果您想在 ${wakeupTime} 起床，推荐的入睡时间为：${cycle90Time} (7.5小时/5个周期) 或 ${cycle120Time} (9小时/6个周期)`;
+            
+            document.getElementById('sleepRecommendation').style.display = 'block';
+            document.getElementById('wakeupRecommendation').style.display = 'none';
+            document.getElementById('calculatorResult').style.display = 'block';
+        });
+        
+        // 睡眠质量分析功能
+        document.getElementById('analyzeBtn').addEventListener('click', function() {
+            const actualSleepTime = document.getElementById('actualSleepTime').value;
+            const actualWakeupTime = document.getElementById('actualWakeupTime').value;
+            
+            // 将时间字符串转换为日期对象
+            const [sleepHours, sleepMinutes] = actualSleepTime.split(':').map(Number);
+            const [wakeupHours, wakeupMinutes] = actualWakeupTime.split(':').map(Number);
+            
+            // 创建日期对象
+            const sleepDate = new Date();
+            sleepDate.setHours(sleepHours, sleepMinutes, 0, 0);
+            
+            let wakeupDate = new Date();
+            wakeupDate.setHours(wakeupHours, wakeupMinutes, 0, 0);
+            
+            // 如果起床时间在睡觉时间之前，则起床时间是第二天
+            if (wakeupDate < sleepDate) {
+                wakeupDate.setDate(wakeupDate.getDate() + 1);
+            }
+            
+            // 计算实际睡眠时长（毫秒）
+            const actualDurationMs = wakeupDate - sleepDate;
+            const actualDurationHours = actualDurationMs / (1000 * 60 * 60);
+            
+            // 计算睡眠效率（假设理想睡眠时间为8小时）
+            const idealSleepHours = 8;
+            const sleepEfficiency = Math.min(100, Math.round((actualDurationHours / idealSleepHours) * 100));
+            
+            // 估算深睡时间（约为总睡眠时间的20-25%）
+            const deepSleepHours = actualDurationHours * (0.2 + Math.random() * 0.05);
+            
+            // 评估睡眠质量
+            let quality, badgeClass, recommendations;
+            
+            if (actualDurationHours >= 7.5) {
+                quality = "优秀";
+                badgeClass = "excellent";
+                recommendations = [
+                    "您的睡眠质量很好，继续保持规律的作息",
+                    "睡前避免过度兴奋的活动",
+                    "保持卧室通风良好"
+                ];
+            } else if (actualDurationHours >= 6.5) {
+                quality = "良好";
+                badgeClass = "good";
+                recommendations = [
+                    "您的睡眠质量不错，但可以尝试早睡30分钟",
+                    "减少晚上咖啡因的摄入",
+                    "尝试睡前冥想或放松练习"
+                ];
+            } else if (actualDurationHours >= 5.5) {
+                quality = "一般";
+                badgeClass = "fair";
+                recommendations = [
+                    "您的睡眠时间略短，建议增加睡眠时间",
+                    "建立固定的睡前习惯",
+                    "避免在床上使用电子设备"
+                ];
+            } else {
+                quality = "不足";
+                badgeClass = "poor";
+                recommendations = [
+                    "您的睡眠时间严重不足，需要改善",
+                    "尝试每天提前15分钟上床",
+                    "考虑咨询医生关于睡眠问题",
+                    "白天适当小憩补充精力"
+                ];
+            }
+            
+            // 显示结果
+            document.getElementById('actualDuration').textContent = actualDurationHours.toFixed(1) + '小时';
+            document.getElementById('sleepEfficiency').textContent = sleepEfficiency + '%';
+            document.getElementById('deepSleep').textContent = deepSleepHours.toFixed(1) + '小时';
+            
+            const qualityBadge = document.getElementById('qualityBadge');
+            qualityBadge.textContent = quality;
+            qualityBadge.className = 'quality-badge ' + badgeClass;
+            
+            const recommendationsList = document.getElementById('recommendationsList');
+            recommendationsList.innerHTML = '';
+            recommendations.forEach(rec => {
+                const li = document.createElement('li');
+                li.textContent = rec;
+                recommendationsList.appendChild(li);
+            });
+            
+            document.getElementById('analyzerResult').style.display = 'block';
+        });
+        
+        // 页面加载时检测设备
+        window.addEventListener('load', function() {
+            detectDevice();
+            // 默认显示计算结果
+            document.getElementById('calculatorResult').style.display = 'block';
+        });
+        
+        window.addEventListener('resize', detectDevice);
+    </script>
+</body>
+</html>
